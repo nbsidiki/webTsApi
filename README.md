@@ -10,8 +10,7 @@ Le processus est simple :
 -une note peut être modifiée par les ADMIN mais pas supprimée
 -les élèves peuvent consulter leurs notes une fois connecté avec leur 'id' unique (eleveId) qui doit leur être communiqué par l'admin qui les a ajouté
 
-
-#Demarrer en local
+# Demarrer en local
 
 -npm intall
 -npm run start
