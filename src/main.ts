@@ -4,8 +4,8 @@ import { UserConnection, UserCreation } from "./bdd/user";
 import { status } from "./utils";
 import { IEleve } from "./bdd/eleve";
 import { INote } from "./bdd/note";
+import express, { Express, Request, Response } from "express";
 
-const express = require("express");
 const app = express();
 app.use(express.json());
 const port = process.env.PORT ?? 3000;
@@ -29,8 +29,8 @@ function makeToken(length: number): any {
 
 //console.log(makeToken(15));
 
-app.get("/", (req: any, res: any) => {
-  res.send("Hello World!");
+app.get("/", (req: Request, res: Response) => {
+  res.send({ message: "Hello World!" });
 });
 
 // se connecter à la base de données une seule fois au démarrage de l'application
@@ -50,13 +50,13 @@ async function getUserByToken(token: string) {
   return user;
 }
 
-async function getEleves() {
+async function getStudent() {
   const query = "SELECT * FROM eleves";
-  const [eleves] = await connection.promise().query(query);
-  return eleves;
+  const [student] = await connection.promise().query(query);
+  return student;
 }
 
-app.post("/users", async (req: any, res: any) => {
+app.post("/users", async (req: Request, res: Response) => {
   if (req.body.email !== "" && req.body.password !== "") {
     let checked: any = false;
     //console.log("request", req.body);
@@ -78,7 +78,7 @@ app.post("/users", async (req: any, res: any) => {
       });
     };
     try {
-      if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+      if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
         res.status(401).send({ message: "Unauthorized" });
       }
       checked = await check();
@@ -99,28 +99,28 @@ app.post("/users", async (req: any, res: any) => {
           res.sendStatus(201);
         });
       } else {
-        res.send("Le user existe déjà");
+        res.send({ message: "Le user existe déjà" });
       }
     } catch (error) {
       console.error(error);
       res.sendStatus(500);
     }
   } else {
-    res.send("les champs email et password sont obligatoires");
+    res.send({ message: "les champs email et password sont obligatoires" });
   }
 });
 // endpoint POST pour vérifier les informations d'authentification d'un utilisateur
-app.post("/me", async (req: any, res: any) => {
-  let checked: any = false;
+app.post("/me", async (req: Request, res: Response) => {
+  let checked: boolean | unknown = false;
   let query: string = "SELECT * FROM users WHERE ?";
-  const value: any = {
+  const value = {
     email: req.body.email,
   };
 
   // vérifier les informations d'authentification de l'utilisateur
   const check = () => {
     return new Promise((resolve, reject) => {
-      connection.query(query, value, (error: any, results: any, fields) => {
+      connection.query(query, value, (error, results: any, fields) => {
         if (error) {
           reject(error);
           return;
@@ -140,7 +140,7 @@ app.post("/me", async (req: any, res: any) => {
   };
 
   try {
-    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+    if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
     checked = await check();
@@ -148,12 +148,12 @@ app.post("/me", async (req: any, res: any) => {
       // mettre à jour le jeton d'accès de l'utilisateur dans la base de données
       query = `UPDATE users SET ? WHERE email = "${req.body.email}"`;
       const connectionInfo = makeToken(25);
-      connection.query(query, connectionInfo, (error: any, results: any) => {
+      connection.query(query, connectionInfo, (error, results) => {
         if (error) throw error;
         res.send(connectionInfo);
       });
     } else {
-      res.send("Mot de passe incorrect ou non-renseigné");
+      res.send({ message: "Mot de passe incorrect ou non-renseigné" });
     }
   } catch (error) {
     console.error(error);
@@ -161,19 +161,17 @@ app.post("/me", async (req: any, res: any) => {
   }
 });
 
-app.post("/eleves", async (req: any, res: any) => {
+app.post("/student", async (req: Request, res: Response) => {
   try {
-    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+    if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const token = req.headers["authorization"].split(" ")[1];
+    const token = req.headers["authorization"]?.split(" ")[1];
     if (!token) {
       return res.sendStatus(401);
     }
 
-    const user: any = await runQuery("SELECT * FROM users WHERE token = ?", [
-      token,
-    ]);
+    const user = await runQuery("SELECT * FROM users WHERE token = ?", [token]);
 
     if (!user || !isWithin3Hours(user[0].conexionDate)) {
       return res.sendStatus(401);
@@ -183,16 +181,16 @@ app.post("/eleves", async (req: any, res: any) => {
     if (!firstName || !lastName || !filiere) {
       return res
         .status(400)
-        .send("Veillez renseigner les informations necessaire");
+        .send({ message: "Veillez renseigner les informations necessaire" });
     }
 
-    const existingEleve: any = await runQuery(
+    const existingEleve = await runQuery(
       "SELECT * FROM eleves WHERE lastName = ?",
       [lastName]
     );
 
     if (existingEleve?.length != 0) {
-      return res.status(409).send("L'élève existe déjà");
+      return res.status(409).send({ message: "L'élève existe déjà" });
     }
     const result = await runQuery("INSERT INTO eleves SET ?", {
       firstName,
@@ -200,39 +198,39 @@ app.post("/eleves", async (req: any, res: any) => {
       filiere,
       classe,
     });
-    res.send("Ajouter avec succès");
+    res.send({ message: "Ajouter avec succès" });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Une erreur est survenue");
+    res.status(500).send({ message: "Une erreur est survenue" });
   }
 });
 
-app.get("/eleves", async (req: any, res: any) => {
+app.get("/student", async (req: Request, res: Response) => {
   try {
-    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+    if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    if (!req.headers["authorization"].split(" ")[1]) {
-      return res.status(401).send("Unauthorized");
+    if (!req.headers["authorization"]?.split(" ")[1]) {
+      return res.status(401).send({ message: "Unauthorized" });
     }
 
     const user: any = await getUserByToken(
-      req.headers["authorization"].split(" ")[1]
+      req.headers["authorization"]?.split(" ")[1]
     );
 
     if (!user) {
-      return res.status(401).send("Please log in");
+      return res.status(401).send({ message: "Please log in" });
     }
 
     if (user.status !== status.ADMIN) {
-      return res.status(401).send("Unauthorized");
+      return res.status(401).send({ message: "Unauthorized" });
     }
 
-    const eleves = await getEleves();
-    return res.send(eleves);
+    const student = await getStudent();
+    return res.send(student);
   } catch (error) {
     console.error(error);
-    return res.status(500).send("Internal Server Error");
+    return res.status(500).send({ message: "Internal Server Error" });
   }
 });
 
@@ -255,15 +253,15 @@ function runQuery(query: string, values: any): Promise<any> {
   });
 }
 
-app.get("/eleves/:id", async (req: any, res: any) => {
+app.get("/student/:id", async (req: Request, res: Response) => {
   try {
-    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+    if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
 
-    const token = req.headers["authorization"].split(" ")[1];
+    const token = req.headers["authorization"]?.split(" ")[1];
     if (!token) {
-      return res.status(401).send("Unauthorized");
+      return res.status(401).send({ message: "Unauthorized" });
     }
 
     const userQuery = "SELECT * FROM users WHERE ?";
@@ -271,7 +269,7 @@ app.get("/eleves/:id", async (req: any, res: any) => {
     const userResult = await runQuery(userQuery, userValue);
 
     if (userResult.length === 0) {
-      return res.status(401).send("Please log in");
+      return res.status(401).send({ message: "Please log in" });
     }
 
     const user = userResult[0];
@@ -279,10 +277,10 @@ app.get("/eleves/:id", async (req: any, res: any) => {
     const isAuthorized = isAdmin && isWithin3Hours(user.conexionDate);
 
     if (!isAuthorized) {
-      return res.status(401).send("Unauthorized");
+      return res.status(401).send({ message: "Unauthorized" });
     }
-    let eleveQuery: any;
-    let eleveValue: any;
+    let eleveQuery: string;
+    let eleveValue: Array<number | string>;
     const hasNumber = /^-?\d+$/.test(req.params.id);
     if (hasNumber) {
       eleveQuery = "SELECT * FROM eleves WHERE id = ?";
@@ -294,28 +292,28 @@ app.get("/eleves/:id", async (req: any, res: any) => {
     const eleveResult = await runQuery(eleveQuery, eleveValue);
 
     if (eleveResult.length === 0) {
-      return res.status(404).send("Student not found");
+      return res.status(404).send({ message: "Student not found" });
     }
 
     const eleve = eleveResult;
     res.send(eleve);
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal server error");
+    res.status(500).send({ message: "Internal server error" });
   }
 });
 
-app.put("/eleves/:id", async (req: any, res: any) => {
-  if (!req.headers["authorization"].split(" ")[1]) {
+app.put("/student/:id", async (req: Request, res: Response) => {
+  if (!req.headers["authorization"]?.split(" ")[1]) {
     return res.sendStatus(401);
   }
 
   const userQuery = "SELECT * FROM users WHERE token = ?";
-  const userValues = [req.headers["authorization"].split(" ")[1]];
+  const userValues = [req.headers["authorization"]?.split(" ")[1]];
   let userResult;
 
   try {
-    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+    if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
     userResult = await runQuery(userQuery, userValues);
@@ -335,22 +333,22 @@ app.put("/eleves/:id", async (req: any, res: any) => {
   const updateValues = [req.body, req.params.id];
 
   try {
-    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+    if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const updateResult: any = await runQuery(updateQuery, updateValues);
+    const updateResult = await runQuery(updateQuery, updateValues);
     if (updateResult.affectedRows === 0) {
       return res.sendStatus(404);
     }
-    res.send("Modified Success");
+    res.send({ message: "Modified Success" });
   } catch (error) {
     console.error(error);
     return res.sendStatus(500);
   }
 });
 
-app.delete("/eleves/:id", async (req: any, res: any) => {
-  if (!req.headers["authorization"].split(" ")[1]) {
+app.delete("/student/:id", async (req: Request, res: Response) => {
+  if (!req.headers["authorization"]?.split(" ")[1]) {
     res.sendStatus(401);
     return;
   }
@@ -358,8 +356,8 @@ app.delete("/eleves/:id", async (req: any, res: any) => {
   const DELETE_NOTES_QUERY = `DELETE FROM notes WHERE eleveId = ?`;
   const SELECT_USER_QUERY = `SELECT *FROM users WHERE token = ?`;
 
-  const userResults: any = await runQuery(SELECT_USER_QUERY, [
-    req.headers["authorization"].split(" ")[1],
+  const userResults = await runQuery(SELECT_USER_QUERY, [
+    req.headers["authorization"]?.split(" ")[1],
   ]);
 
   // Si aucun utilisateur trouvé, envoie une réponse 401
@@ -382,10 +380,9 @@ app.delete("/eleves/:id", async (req: any, res: any) => {
   }
 
   // Vérifie si l'élément à supprimer existe
-  const [eleveResults]: any = await runQuery(
-    `SELECT * FROM eleves WHERE id = ?`,
-    [req.params.id]
-  );
+  const [eleveResults] = await runQuery(`SELECT * FROM eleves WHERE id = ?`, [
+    req.params.id,
+  ]);
 
   // Si l'élément à supprimer n'existe pas, envoie une réponse 404
   if (eleveResults?.length == 0) {
@@ -394,14 +391,14 @@ app.delete("/eleves/:id", async (req: any, res: any) => {
   }
 
   // Supprime l'élément et les notes associées
-  connection.beginTransaction(function (err: any) {
+  connection.beginTransaction(function (err) {
     if (err) {
       throw err;
     }
     connection.query(
       DELETE_ELEVE_QUERY,
       [req.params.id],
-      function (error: any, results: any, fields: any) {
+      function (error, results, fields) {
         if (error) {
           connection.rollback(function () {
             throw error;
@@ -410,21 +407,21 @@ app.delete("/eleves/:id", async (req: any, res: any) => {
         connection.query(
           DELETE_NOTES_QUERY,
           [req.params.id],
-          function (error: any, results: any, fields: any) {
+          function (error, results, fields) {
             if (error) {
               connection.rollback(function () {
                 throw error;
               });
             }
-            connection.commit(function (err: any) {
+            connection.commit(function (err) {
               if (err) {
                 connection.rollback(function () {
                   throw err;
                 });
               }
-              res.send(
-                `L'élève avec l'ID ${req.params.id} a été supprimé avec succès.`
-              );
+              res.send({
+                message: `L'élève avec l'ID ${req.params.id} a été supprimé avec succès.`,
+              });
             });
           }
         );
@@ -433,26 +430,26 @@ app.delete("/eleves/:id", async (req: any, res: any) => {
   });
 });
 
-app.get("/notes", async (req: any, res: any) => {
-  if (!req.headers["authorization"].split(" ")[1]) {
+app.get("/notes", async (req: Request, res: Response) => {
+  if (!req.headers["authorization"]?.split(" ")[1]) {
     res.sendStatus(401);
     return;
   }
 
   let query = "SELECT * FROM users WHERE token = ?";
-  const value = req.headers["authorization"].split(" ")[1];
-  const userResults: any = await runQuery(query, [value]);
+  const value = req.headers["authorization"]?.split(" ")[1];
+  const userResults = await runQuery(query, [value]);
 
   if (userResults?.length == 0) {
     res.sendStatus(401);
-    res.send("Veillez vous connecter");
+    res.send({ message: "Veillez vous connecter" });
     return;
   }
 
   const user = userResults[0];
 
   if (
-    user.token != req.headers["authorization"].split(" ")[1] ||
+    user.token != req.headers["authorization"]?.split(" ")[1] ||
     !isWithin3Hours(user.conexionDate) ||
     user.status != status.ADMIN
   ) {
@@ -469,17 +466,17 @@ app.get("/notes", async (req: any, res: any) => {
   });
 });
 
-app.get("/notes/:matiere", async (req: any, res: any) => {
+app.get("/notes/:matiere", async (req: Request, res: Response) => {
   try {
-    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+    if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const token = req.headers["authorization"].split(" ")[1];
+    const token = req.headers["authorization"]?.split(" ")[1];
     if (!token) {
       return res.sendStatus(401);
     }
     const userQuery = "SELECT * FROM users WHERE token = ?";
-    const userResults: any = await runQuery(userQuery, [token]);
+    const userResults = await runQuery(userQuery, [token]);
     if (userResults.length === 0) {
       return res.sendStatus(401);
     }
@@ -492,15 +489,15 @@ app.get("/notes/:matiere", async (req: any, res: any) => {
     const hasNumber = /^-?\d+$/.test(req.params.matiere);
     if (!hasNumber && isAdmin) {
       const matiere = req.params.matiere;
-      const elevesQuery = "SELECT * FROM notes WHERE matiere = ?";
-      const [elevesResults] = await runQuery(elevesQuery, [matiere]);
-      res.send(elevesResults);
+      const studentQuery = "SELECT * FROM notes WHERE matiere = ?";
+      const [studentResults] = await runQuery(studentQuery, [matiere]);
+      res.send(studentResults);
     }
     if (hasNumber) {
-      const eleveId = req.params.matiere;
-      const elevesQuery = "SELECT * FROM notes WHERE eleveId = ?";
-      const elevesResults: any = await runQuery(elevesQuery, [eleveId]);
-      res.send(elevesResults);
+      const studentId = req.params.matiere;
+      const studentQuery = "SELECT * FROM notes WHERE eleveId = ?";
+      const studentResults = await runQuery(studentQuery, [studentId]);
+      res.send(studentResults);
     }
   } catch (error) {
     console.error(error);
@@ -508,18 +505,18 @@ app.get("/notes/:matiere", async (req: any, res: any) => {
   }
 });
 
-app.put("/notes/:id", async (req: any, res: any) => {
+app.put("/notes/:id", async (req: Request, res: Response) => {
   try {
-    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+    if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const token = req.headers["authorization"].split(" ")[1];
+    const token = req.headers["authorization"]?.split(" ")[1];
     if (!token) {
       return res.sendStatus(401);
     }
 
     const userQuery = "SELECT * FROM users WHERE token = ?";
-    const userResults: any = await runQuery(userQuery, [token]);
+    const userResults = await runQuery(userQuery, [token]);
     if (userResults.length === 0) {
       return res.sendStatus(401);
     }
@@ -535,19 +532,19 @@ app.put("/notes/:id", async (req: any, res: any) => {
     const updateValues = [req.body, noteId];
 
     await runQuery(updateQuery, updateValues);
-    res.send("Modified Success");
+    res.send({ message: "Modified Success" });
   } catch (error) {
     console.error(error);
     res.sendStatus(500);
   }
 });
 
-app.post("/notes", async (req: any, res: any) => {
+app.post("/notes", async (req: Request, res: Response) => {
   try {
-    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+    if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const token = req.headers["authorization"].split(" ")[1];
+    const token = req.headers["authorization"]?.split(" ")[1];
     if (!token) {
       return res.sendStatus(401);
     }
@@ -565,13 +562,13 @@ app.post("/notes", async (req: any, res: any) => {
       return res.sendStatus(401);
     }
 
-    const { eleveId, matiere, note } = req.body;
-    if (!eleveId || !matiere || !note) {
+    const { studentId, matiere, note } = req.body;
+    if (!studentId || !matiere || !note) {
       return res.sendStatus(400);
     }
 
     const insertQuery = "INSERT INTO notes SET ?";
-    const insertValues = { eleveId, matiere, note };
+    const insertValues = { studentId, matiere, note };
 
     await runQuery(insertQuery, insertValues);
     res.sendStatus(200);
@@ -581,18 +578,18 @@ app.post("/notes", async (req: any, res: any) => {
   }
 });
 
-app.put("/disconnect", async (req: any, res: any) => {
+app.put("/disconnect", async (req: Request, res: Response) => {
   try {
-    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
+    if (req.headers["authorization"]?.split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const token = req.headers["authorization"].split(" ")[1];
+    const token = req.headers["authorization"]?.split(" ")[1];
     if (!token) {
-      return res.send("Vous n'êtes pas connecté");
+      return res.send({ message: "Vous n'êtes pas connecté" });
     }
 
     const userQuery = "SELECT * FROM users WHERE token = ?";
-    const userResults: any = await runQuery(userQuery, [token]);
+    const userResults = await runQuery(userQuery, [token]);
     if (userResults.length === 0) {
       return res.sendStatus(401);
     }
