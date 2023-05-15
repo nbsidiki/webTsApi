@@ -78,7 +78,7 @@ app.post("/users", async (req: any, res: any) => {
       });
     };
     try {
-      if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+      if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
         res.status(401).send({ message: "Unauthorized" });
       }
       checked = await check();
@@ -140,7 +140,7 @@ app.post("/me", async (req: any, res: any) => {
   };
 
   try {
-    if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
     checked = await check();
@@ -163,10 +163,10 @@ app.post("/me", async (req: any, res: any) => {
 
 app.post("/eleves", async (req: any, res: any) => {
   try {
-    if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const token = split(req.headers["authorization"], " ")[1];
+    const token = req.headers["authorization"].split(" ")[1];
     if (!token) {
       return res.sendStatus(401);
     }
@@ -209,15 +209,15 @@ app.post("/eleves", async (req: any, res: any) => {
 
 app.get("/eleves", async (req: any, res: any) => {
   try {
-    if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    if (!split(req.headers["authorization"], " ")[1]) {
+    if (!req.headers["authorization"].split(" ")[1]) {
       return res.status(401).send("Unauthorized");
     }
 
     const user: any = await getUserByToken(
-      split(req.headers["authorization"], " ")[1]
+      req.headers["authorization"].split(" ")[1]
     );
 
     if (!user) {
@@ -257,11 +257,11 @@ function runQuery(query: string, values: any): Promise<any> {
 
 app.get("/eleves/:id", async (req: any, res: any) => {
   try {
-    if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
 
-    const token = split(req.headers["authorization"], " ")[1];
+    const token = req.headers["authorization"].split(" ")[1];
     if (!token) {
       return res.status(401).send("Unauthorized");
     }
@@ -306,16 +306,16 @@ app.get("/eleves/:id", async (req: any, res: any) => {
 });
 
 app.put("/eleves/:id", async (req: any, res: any) => {
-  if (!split(req.headers["authorization"], " ")[1]) {
+  if (!req.headers["authorization"].split(" ")[1]) {
     return res.sendStatus(401);
   }
 
   const userQuery = "SELECT * FROM users WHERE token = ?";
-  const userValues = [split(req.headers["authorization"], " ")[1]];
+  const userValues = [req.headers["authorization"].split(" ")[1]];
   let userResult;
 
   try {
-    if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
     userResult = await runQuery(userQuery, userValues);
@@ -335,7 +335,7 @@ app.put("/eleves/:id", async (req: any, res: any) => {
   const updateValues = [req.body, req.params.id];
 
   try {
-    if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
     const updateResult: any = await runQuery(updateQuery, updateValues);
@@ -350,7 +350,7 @@ app.put("/eleves/:id", async (req: any, res: any) => {
 });
 
 app.delete("/eleves/:id", async (req: any, res: any) => {
-  if (!split(req.headers["authorization"], " ")[1]) {
+  if (!req.headers["authorization"].split(" ")[1]) {
     res.sendStatus(401);
     return;
   }
@@ -359,7 +359,7 @@ app.delete("/eleves/:id", async (req: any, res: any) => {
   const SELECT_USER_QUERY = `SELECT *FROM users WHERE token = ?`;
 
   const userResults: any = await runQuery(SELECT_USER_QUERY, [
-    split(req.headers["authorization"], " ")[1],
+    req.headers["authorization"].split(" ")[1],
   ]);
 
   // Si aucun utilisateur trouvé, envoie une réponse 401
@@ -434,13 +434,13 @@ app.delete("/eleves/:id", async (req: any, res: any) => {
 });
 
 app.get("/notes", async (req: any, res: any) => {
-  if (!split(req.headers["authorization"], " ")[1]) {
+  if (!req.headers["authorization"].split(" ")[1]) {
     res.sendStatus(401);
     return;
   }
 
   let query = "SELECT * FROM users WHERE token = ?";
-  const value = split(req.headers["authorization"], " ")[1];
+  const value = req.headers["authorization"].split(" ")[1];
   const userResults: any = await runQuery(query, [value]);
 
   if (userResults?.length == 0) {
@@ -452,7 +452,7 @@ app.get("/notes", async (req: any, res: any) => {
   const user = userResults[0];
 
   if (
-    user.token != split(req.headers["authorization"], " ")[1] ||
+    user.token != req.headers["authorization"].split(" ")[1] ||
     !isWithin3Hours(user.conexionDate) ||
     user.status != status.ADMIN
   ) {
@@ -471,10 +471,10 @@ app.get("/notes", async (req: any, res: any) => {
 
 app.get("/notes/:matiere", async (req: any, res: any) => {
   try {
-    if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const token = split(req.headers["authorization"], " ")[1];
+    const token = req.headers["authorization"].split(" ")[1];
     if (!token) {
       return res.sendStatus(401);
     }
@@ -510,10 +510,10 @@ app.get("/notes/:matiere", async (req: any, res: any) => {
 
 app.put("/notes/:id", async (req: any, res: any) => {
   try {
-    if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const token = split(req.headers["authorization"], " ")[1];
+    const token = req.headers["authorization"].split(" ")[1];
     if (!token) {
       return res.sendStatus(401);
     }
@@ -544,10 +544,10 @@ app.put("/notes/:id", async (req: any, res: any) => {
 
 app.post("/notes", async (req: any, res: any) => {
   try {
-    if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const token = split(req.headers["authorization"], " ")[1];
+    const token = req.headers["authorization"].split(" ")[1];
     if (!token) {
       return res.sendStatus(401);
     }
@@ -583,10 +583,10 @@ app.post("/notes", async (req: any, res: any) => {
 
 app.put("/disconnect", async (req: any, res: any) => {
   try {
-    if (split(req.headers["authorization"], " ")[0] !== "Bearer") {
+    if (req.headers["authorization"].split(" ")[0] !== "Bearer") {
       res.status(401).send({ message: "Unauthorized" });
     }
-    const token = split(req.headers["authorization"], " ")[1];
+    const token = req.headers["authorization"].split(" ")[1];
     if (!token) {
       return res.send("Vous n'êtes pas connecté");
     }
