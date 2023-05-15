@@ -1,9 +1,9 @@
-POST http://localhost:3000/users HTTP/1.1
+POST https://abouweb.alwaysdata.net/users HTTP/1.1
 Content-Type: application/json
 
 {
     "active": 1,
-    "email": "sidikinabe40@gmail.com",
+    "email": "sidikinabe10@gmail.com",
     "password": "WUKAf35xfyul@",
     "firstName": "nabe",
     "lastName": "abou",
@@ -13,57 +13,77 @@ Content-Type: application/json
 }
 
 ###
-POST http://localhost:3000/me HTTP/1.1
+POST https://abouweb.alwaysdata.net/me
 Content-Type: application/json
 
 {
-    "email": "sidikinabe40@gmail.com",
+    "email": "sidikinabe10@gmail.com",
     "password": "WUKAf35xfyul@"
 }
 
 ###
 
-POST http://localhost:3000/eleves HTTP/1.1
+POST https://abouweb.alwaysdata.net/eleves HTTP/1.1
 Content-Type: application/json
-Authorization: LTAQXmtkPIiyRzNbFAedHBcdU
+Authorization: Bearer ZVJzEVftDGLnzIRvybprNmoxK
 
 {
-    "firstName": "abou",
-    "lastName": "nabe",
+    "firstName": "aboubacar",
+    "lastName": "nabee",
     "filiere": "TECH",
     "classe": 2
 }
 
 ###
 
-GET http://localhost:3000/eleves/1 HTTP/1.1
+GET https://abouweb.alwaysdata.net/eleves/TECH HTTP/1.1
 Content-Type: application/json
-Authorization: LTAQXmtkPIiyRzNbFAedHBcdU
+Authorization: Bearer ZVJzEVftDGLnzIRvybprNmoxk
 
 
 ###
 
-PUT http://localhost:3000/eleves/1 HTTP/1.1
+PUT https://abouweb.alwaysdata.net/eleves/2 HTTP/1.1
 Content-Type: application/json
-Authorization: LTAQXmtkPIiyRzNbFAedHBcdU
+Authorization: Bearer ZVJzEVftDGLnzIRvybprNmoxK
 
 {
-    "lastName":"Nabe"
+    "lastName":"nabeee"
 }
 
 ###
-DELETE http://localhost:3000/eleves/1 HTTP/1.1
+DELETE https://abouweb.alwaysdata.net/eleves/2 HTTP/1.1
 Content-Type: application/json
-Authorization: LTAQXmtkPIiyRzNbFAedHBcdU
+Authorization: Bearer ZVJzEVftDGLnzIRvybprNmoxK
 
 
 ###
-POST http://localhost:3000/notes HTTP/1.1
+POST https://abouweb.alwaysdata.net/notes HTTP/1.1
 Content-Type: application/json
-Authorization: LTAQXmtkPIiyRzNbFAedHBcdU
+Authorization: Bearer ZVJzEVftDGLnzIRvybprNmoxK
 
 {
-    "eleveid": 1,
-    "matiere": "ANGLAIS",
-    "note": 10
+    "eleveId": 2,
+    "matiere": "MATH",
+    "note": 15
 }
+
+###
+GET https://abouweb.alwaysdata.net/notes/2 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer ZVJzEVftDGLnzIRvybprNmoxK
+
+###
+PUT https://abouweb.alwaysdata.net/notes/1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer ZVJzEVftDGLnzIRvybprNmoxK
+
+
+{
+    "note":15
+}
+
+###
+PUT https://abouweb.alwaysdata.net/disconnect HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer ZVJzEVftDGLnzIRvybprNmoxK
